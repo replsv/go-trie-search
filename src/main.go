@@ -13,6 +13,7 @@ var m sync.Mutex
 var dir string
 var search string
 var tries []*Trie
+var lock sync.Mutex
 
 func init() {
 	dirPtr := flag.String("dir", "./docs/", "Directory for scanning documents")
@@ -39,6 +40,8 @@ func loadAsTries() {
 	for _, path := range paths {
 		go func(path string) {
 			defer wg.Done()
+			defer lock.Unlock()
+			lock.Lock()
 			content := readFile(path)
 			trie, err := buildTrie(content)
 			if err == nil {
@@ -61,6 +64,8 @@ func performSearch() {
 			wg.Add(1)
 			go func(trie *Trie) {
 				defer wg.Done()
+				defer lock.Unlock()
+				lock.Lock()
 				if trie.Find(search) != nil {
 					results = append(results, trie.GetData("file").(string))
 				}
